@@ -8,15 +8,15 @@
 #include <Arduino.h>
 #include <string.h>
 
-template <class TypeOfArray>
+template <class TypeOfArray, typename TSumType, uint8_t TArraySize>
 class MovingAveragePlus {
  private:
   size_t _array_size;
   size_t _current_index;
   size_t _average_counter;
 
-  TypeOfArray *_array;
-  TypeOfArray _average_sum;
+  TypeOfArray _array[TArraySize];
+  TSumType _average_sum;
 
   size_t _partial_sums_counter;
   TypeOfArray *_partial_sums;
@@ -29,11 +29,10 @@ class MovingAveragePlus {
 
  public:
   // Constructor
-  MovingAveragePlus(size_t size)
-      : _array_size(size),
+  MovingAveragePlus()
+      : _array_size(TArraySize),
         _current_index(0),
         _average_counter(0),
-        _array((TypeOfArray *)calloc(size, sizeof(TypeOfArray))),
         _average_sum(0),
         _partial_sums_counter(0),
         _partial_sums((TypeOfArray *)calloc(1, sizeof(TypeOfArray))),
@@ -41,14 +40,13 @@ class MovingAveragePlus {
 
   // Destructor
   ~MovingAveragePlus() {
-    free(_array);
     free(_partial_sums);
     free(_partial_sum_sizes);
   }
 
   // Get Result and Access elements
 
-  MovingAveragePlus<TypeOfArray> &push(TypeOfArray input) {
+  MovingAveragePlus<TypeOfArray, TSumType, TArraySize> &push(TypeOfArray input) {
     TypeOfArray last_value = _array[_current_index];
     _average_sum -= last_value;
     _average_sum += input;
@@ -123,27 +121,8 @@ class MovingAveragePlus {
 
   size_t size() { return _array_size; }
 
-  MovingAveragePlus<TypeOfArray> &resize(size_t new_size) {
-    _array = static_cast<TypeOfArray *>(
-        realloc(_array, new_size * sizeof(TypeOfArray)));
-
-    for (size_t i = _array_size; i < new_size; i++) _array[i] = 0;
-
-    if (_current_index == 0) {
-      _current_index = _array_size;
-    } else if (_current_index >= new_size) {
-      _current_index = new_size - 1;
-    }
-
-    if (_average_counter >= new_size) {
-      _average_counter = new_size - 1;
-    }
-
-    _array_size = new_size;
-    return *this;
-  }
-  MovingAveragePlus<TypeOfArray> &clear() {
-    memset(_array, 0, sizeof(TypeOfArray) * _array_size);
+  MovingAveragePlus<TypeOfArray, TSumType, TArraySize> &clear() {
+    memset(&_array[0], 0, sizeof(TypeOfArray) * _array_size);
 
     _average_sum = 0;
 
@@ -151,7 +130,7 @@ class MovingAveragePlus {
 
     return *this;
   }
-  MovingAveragePlus<TypeOfArray> &fill(TypeOfArray fill_value) {
+  MovingAveragePlus<TypeOfArray, TSumType, TArraySize> &fill(TypeOfArray fill_value) {
     for (size_t i = 0; i < _average_counter; i++) {
       _array[i] = fill_value;
     }
